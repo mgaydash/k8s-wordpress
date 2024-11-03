@@ -1,0 +1,10 @@
+apiVersion: v2
+name: k8s-wordpress
+description: A Helm chart for deploying Wordpress
+type: application
+version: 0.1.0
+appVersion: "6.x"
+dependencies:
+  - name: wordpress
+    version: 23.1.25
+    repository: https://charts.bitnami.com/bitnami

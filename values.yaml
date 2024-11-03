@@ -1,0 +1,53 @@
+enable_backup: false
+backup_destination: "s3://dfeast2-eksbackup/pr/dfeast2prekscl1/{{ .Release.Namespace }}/{{ .Chart.Name }}/{{ .Release.Name }}/"
+wordpress:
+  replicaCount: 1
+  # smtpHost: postfix-mail
+  # smtpPassword: ""
+  # smtpPort: 25
+  # smtpUser: ""
+  wordpressBlogName: Setup
+  # wordpressConfigureCache: true
+  wordpressEmail:
+  wordpressFirstName: Mitchell
+  wordpressLastName: Gaydash
+  wordpressPassword:
+  wordpressScheme: http
+  wordpressUsername:
+  image:
+    registry: docker.io
+    repository: bitnami/wordpress
+    tag: latest
+  ingress:
+    enabled: true
+    pathType: ImplementationSpecific
+    ingressClassName: nginx
+    hostname:
+    path: /
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/proxy-body-size: 200m
+    extraTls:
+      - hosts:
+          -
+        secretName:
+  mariadb:
+    enabled: true
+    auth:
+      rootPassword:
+      database: bitnami_wordpress
+      username:
+      password:
+    primary:
+      persistence:
+        enabled: true
+        storageClass: ""
+        accessModes:
+          - ReadWriteOnce
+        size: 8Gi
+  # memcached:
+  #   enabled: true
+  service:
+    type: ClusterIP
+  updateStrategy:
+    type: Recreate
