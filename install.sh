@@ -26,6 +26,8 @@ else
 fi
 
 ${CMD} \
+  --set "aws_access_key_id=${S3_ADMIN_AWS_ACCESS_KEY_ID}" \
+  --set "aws_secret_access_key=${S3_ADMIN_AWS_SECRET_ACCESS_KEY}" \
   --set "wordpress.wordpressUsername=${WORDPRESS_USER}" \
   --set "wordpress.wordpressPassword=${WORDPRESS_PASS}" \
   --set "wordpress.wordpressEmail=${WORDPRESS_EMAIL}" \

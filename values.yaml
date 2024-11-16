@@ -1,13 +1,10 @@
-enable_backup: false
+enable_backup: true
+aws_access_key_id:
+aws_secret_access_key:
 backup_destination: "s3://dfeast2-eksbackup/pr/dfeast2prekscl1/{{ .Release.Namespace }}/{{ .Chart.Name }}/{{ .Release.Name }}/"
 wordpress:
   replicaCount: 1
-  # smtpHost: postfix-mail
-  # smtpPassword: ""
-  # smtpPort: 25
-  # smtpUser: ""
   wordpressBlogName: Setup
-  # wordpressConfigureCache: true
   wordpressEmail:
   wordpressFirstName: Mitchell
   wordpressLastName: Gaydash

@@ -1,0 +1,54 @@
+{{- if .Values.enable_backup }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "k8s-wordpress.fullname" . }}-backup
+rules:
+  - verbs:
+      - get
+      - list
+      - watch
+      - exec
+    apiGroups:
+      - apps
+    resources:
+      - deployments
+  - verbs:
+      - get
+      - list
+      - watch
+      - exec
+    apiGroups:
+      - ''
+    resources:
+      - pods
+  - verbs:
+      - create
+    apiGroups:
+      - ''
+    resources:
+      - pods/exec
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "k8s-wordpress.fullname" . }}-backup
+  namespace: {{ .Release.Namespace }}
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "k8s-wordpress.fullname" . }}-backup
+  namespace: {{ .Release.Namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "k8s-wordpress.fullname" . }}-backup
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "k8s-wordpress.fullname" . }}-backup
+{{- end }}

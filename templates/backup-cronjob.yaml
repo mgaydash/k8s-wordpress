@@ -1,0 +1,87 @@
+{{- if .Values.enable_backup }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "k8s-wordpress.fullname" . }}-backup
+spec:
+  schedule: "0 0 * * *"
+  timeZone: "America/New_York"
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          affinity:
+            podAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                - labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/instance
+                        operator: In
+                        values:
+                          - {{ .Release.Name }}
+                  topologyKey: kubernetes.io/hostname
+          initContainers:
+            - image: bitnami/kubectl
+              imagePullPolicy: IfNotPresent
+              name: {{ include "k8s-wordpress.fullname" . }}-backup-collect
+              args:
+                - exec
+                - deployment/{{ .Release.Name }}-wordpress
+                - --
+                - /bin/sh
+                - -c
+                - |
+                  mkdir /bitnami/wordpress/backups
+                  cd /bitnami/wordpress/backups \
+                  && TIMESTAMP=$(date -u '+%Y%m%d%H%M%S') \
+                  && wp db export database_backup_${TIMESTAMP}.sql \
+                  && tar czf ./backup_${TIMESTAMP}.tgz ./database_backup_${TIMESTAMP}.sql /bitnami/wordpress/wp-content /bitnami/wordpress/wp-config.php \
+                  && rm -v database_backup_${TIMESTAMP}.sql \
+                  && ls -lah
+            - image: amazon/aws-cli:2.11.27
+              imagePullPolicy: IfNotPresent
+              name: {{ include "k8s-wordpress.fullname" . }}-backup-aws
+              command:
+                - /bin/bash
+              args:
+                - -c
+                - |
+                  LATEST_FILE=$(ls -t /mnt/wordpress/backups/*.tgz | head -n 1)
+                  LATEST_FILE_NAME=$(echo ${LATEST_FILE} | rev | cut -f 1 -d '/' | rev)
+                  if [ "${LATEST_FILE}" ]; then
+                    aws s3 cp \
+                      --no-progress \
+                      "${LATEST_FILE}" \
+                      "s3://backups.mgaydash.com/homelab0/{{ .Chart.Name }}/{{ .Release.Name }}/${LATEST_FILE_NAME}"
+                  else
+                    echo "No backup archive found."
+                  fi
+              envFrom:
+                - secretRef:
+                    name: {{ include "k8s-wordpress.fullname" . }}-backup
+              volumeMounts:
+                - name: wordpress-data
+                  mountPath: /mnt
+          containers:
+            - image: bitnami/bitnami-shell
+              imagePullPolicy: IfNotPresent
+              name: {{ include "k8s-wordpress.fullname" . }}-backup-cleanup
+              command:
+                - /bin/bash
+              args:
+                - -c
+                - |
+                  rm -v /mnt/wordpress/backups/*.tgz
+              volumeMounts:
+                - name: wordpress-data
+                  mountPath: /mnt
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 0
+          serviceAccount: {{ include "k8s-wordpress.fullname" . }}-backup
+          volumes:
+            - name: wordpress-data
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-wordpress
+{{- end }}
